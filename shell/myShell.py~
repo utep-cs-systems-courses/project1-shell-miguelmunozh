@@ -1,0 +1,58 @@
+#! /usr/bin/env python3
+import re, sys, os
+
+# export PS1="\u - \h$ " go back to normal and
+while(inp != "exit"): # built-in command exit
+        input  = input()
+        if input == "cd":
+                print("change the directory")
+        
+
+
+
+good_shell_label = 'gs>'
+
+running = True
+
+
+while running:
+
+        # Get input first
+        keyboard = input(good_shell_label)
+        keyboard = keyboard.split()
+        if not keyboard:
+                pass
+
+        if keyboard[0].lower() == 'exit':
+                os.write(2, ('Exiting GoodShell.\n').encode())
+                running = False
+                sys.exit(0)
+                break
+        # Make a child process with fork
+        rc = os.fork()
+        # Fork fails
+        if rc < 0:
+             os.write(2, ('Could not fork process. Error Code:\t%d' % rc).encode())
+             sys.exit(1)
+
+                # Fork successful. Has its own virtual memory. RC is zero so it is child
+
+        elif rc == 0:
+        # Execute the commands given with exec()
+        # Use input to receive the input of commands
+
+        #os.write(1, ('%s\n' % keyboard).encode()) testing
+        # Go through each directory in os path to find each program
+
+             for dir in re.split(':', os.environ['PATH']):                                                          executable = '%s/%s' % (dir, keyboard[0])  
+                 try:
+                     os.execve(executable, keyboard, os.environ)
+
+                 except FileNotFoundError:
+                     pass
+
+                sys.exit(-1)
+
+        else:
+                # Wait until child process dies.
+                wait_rc = os.wait()
