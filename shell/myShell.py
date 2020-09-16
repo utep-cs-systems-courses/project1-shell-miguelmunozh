@@ -3,14 +3,12 @@ import re, sys, os
 
     
 def change_dir(command):
-    current_path = os.getcwd()          # get the current directory
+    current_path = os.getcwd()                    # get the current directory
     command, desired_dir = re.split(" ", command) # get the command and the desired dir
     os.chdir(desired_dir)
     
-def execute_command(command):
-    pass
-            
-# for other commands
+
+# to execute commands
 def execute(command):
     rc = os.fork()
     if rc < 0:
@@ -18,25 +16,21 @@ def execute(command):
         sys.exit()
     elif rc == 0:
         command = [i.strip() for i in re.split(' ', command)]
-        if '/' in command[0]: # ? xd
+        if '/' in command[0]: 
             try:
                 os.execve(command[0], command, os.environ)
             except FileNotFoundError:
                 pass
         else:
-            for directory in re.split(':', os.environ['PATH']):
+            for directory in re.split(':', os.environ['PATH']): # try each dir in the path
                 program = "%s/%s" % (directory, command[0])
                 try:
-                    os.execve(program, command, os.environ)
-                except FileNotFoundError:
-                    pass
-                except ValueError:
-                    pass
+                    os.execve(program, command, os.environ) # try to exec program
+                except FileNotFoundError:                   # ...expected
+                    pass                                    # fail quietly
 
-        os.write(2, ("Command %s not found\n" % command[0]).encode())
-        #sys.exit(1)
     else:
-        child_pid_code = os.wait()
+        childPidCode = os.wait() # parent waiting for child process to finish
 
 def output_redirection(command):
     # get the command and the file path to write on it
@@ -49,22 +43,16 @@ def output_redirection(command):
         os.write(2, "Fork failed".encode())
         sys.exit(0)
     elif rc == 0:
-        os.close(1)
-        sys.stdout = open(file_path, 'w+') # for writting
-                
+        os.close(1)                        # redirect child's stdout
+        sys.stdout = open(file_path, 'w+') # open file to write
         os.set_inheritable(1, True)
-                
         for directory in re.split(':', os.environ['PATH']):
             program = "%s/%s" % (directory, command[0])
             try:
-                os.execve(program, command, os.environ)
+                os.execve(program, command, os.environ)  #try to exec program
             except FileNotFoundError:
                 pass
-            except ValueError:
-                pass
 
-        os.write(2, ("Command %s not found\n" % command[0]).encode())
-        #sys.exit(1)
     else:
         child_pid_code = os.wait()
 
@@ -88,11 +76,6 @@ def input_redirection(command):
                 os.execve(program, command, os.environ)
             except FileNotFoundError:
                 pass
-            except ValueError:
-                pass
-
-        os.write(2, ("Command %s not found\n" % command[0]).encode())
-        #sys.exit(1)
     else:
         child_pid_code = os.wait()
 
@@ -105,12 +88,13 @@ def pipe(command):
    for f in (r, w):
        os.set_inheritable(f, True)
        pid = os.fork()
-       if pid == 0:
-           os.close(1)
+       if pid == 0:            # child - will write to pipe
+           os.close(1)         # redirect childs stdout
            os.dup(w)
            os.set_inheritable(1, True)
            for fd in (r, w):
                os.close(fd)
+               # execute child program
                for dir in re.split(":", os.environ['PATH']):   # try each directory in the path
                    program = "%s/%s" % (dir, inst1[0])
                    try:
@@ -118,12 +102,13 @@ def pipe(command):
                    except FileNotFoundError:                   # ...expected
                        pass                                    # ...fail quietly
    
-       elif pid > 0:
+       elif pid > 0:           # parent (forked ok)
            os.close(0)
            os.dup(r)
            os.set_inheritable(0, True)
            for fd in (w, r):
                os.close(fd)
+               # executes parent program
                for dir in re.split(":", os.environ['PATH']):   # try each directory in the path
                    program = "%s/%s" % (dir, inst2[0])
                    try:
@@ -133,7 +118,6 @@ def pipe(command):
    
        else:
            os.write(2, ('Fork failed').encode())
-           #sys.exit(1)
        
 # call a functiond depending on the command
 def commands(command):
@@ -152,8 +136,6 @@ def commands(command):
         return
     else:
         execute(command)
-
-
 
 
 
