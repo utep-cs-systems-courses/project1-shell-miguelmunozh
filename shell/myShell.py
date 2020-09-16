@@ -34,7 +34,7 @@ def execute(command):
                     pass
 
         os.write(2, ("Command %s not found\n" % command[0]).encode())
-        sys.exit(1)
+        #sys.exit(1)
     else:
         child_pid_code = os.wait()
 
@@ -64,7 +64,7 @@ def output_redirection(command):
                 pass
 
         os.write(2, ("Command %s not found\n" % command[0]).encode())
-        sys.exit(1)
+        #sys.exit(1)
     else:
         child_pid_code = os.wait()
 
@@ -92,19 +92,10 @@ def input_redirection(command):
                 pass
 
         os.write(2, ("Command %s not found\n" % command[0]).encode())
-        sys.exit(1)
+        #sys.exit(1)
     else:
         child_pid_code = os.wait()
 
-def path(args):
-    for dir in re.split(":", os.environ['PATH']):   # try each directory in the path
-        program = "%s/%s" % (dir, args[0])
-        try:
-            os.execve(program, args, os.environ)    # try to exec program
-        except FileNotFoundError:                   # ...expected
-            pass                                    # ...fail quietly
-    os.write(2, ("Child was not able to exec %s\n" % args[0]).encode())
-    sys.exit(1)                                     # terminate with error
 
 def pipe(command):
    inst1, inst2 = command.split('|')
@@ -120,17 +111,29 @@ def pipe(command):
            os.set_inheritable(1, True)
            for fd in (r, w):
                os.close(fd)
-               path(inst1)
+               for dir in re.split(":", os.environ['PATH']):   # try each directory in the path
+                   program = "%s/%s" % (dir, inst1[0])
+                   try:
+                       os.execve(program, inst1, os.environ)    # try to exec program
+                   except FileNotFoundError:                   # ...expected
+                       pass                                    # ...fail quietly
+   
        elif pid > 0:
            os.close(0)
            os.dup(r)
            os.set_inheritable(0, True)
            for fd in (w, r):
                os.close(fd)
-               path(inst2)
+               for dir in re.split(":", os.environ['PATH']):   # try each directory in the path
+                   program = "%s/%s" % (dir, inst2[0])
+                   try:
+                       os.execve(program, inst2, os.environ)    # try to exec program
+                   except FileNotFoundError:                   # ...expected
+                       pass                                    # ...fail quietly
+   
        else:
            os.write(2, ('Fork failed').encode())
-           sys.exit(1)
+           #sys.exit(1)
        
 # call a functiond depending on the command
 def commands(command):
